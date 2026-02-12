@@ -2,8 +2,15 @@ package com.flowpilot.transfer.domain;
 
 import jakarta.persistence.Embeddable;
 import jakarta.validation.constraints.Min;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Embeddable
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChunkPlan {
     @Min(1)
     private int chunkSizeMb;
@@ -11,27 +18,8 @@ public class ChunkPlan {
     @Min(1)
     private int parallelStreams;
 
-    protected ChunkPlan() {
-    }
-
     public ChunkPlan(int chunkSizeMb, int parallelStreams) {
         this.chunkSizeMb = chunkSizeMb;
-        this.parallelStreams = parallelStreams;
-    }
-
-    public int getChunkSizeMb() {
-        return chunkSizeMb;
-    }
-
-    public void setChunkSizeMb(int chunkSizeMb) {
-        this.chunkSizeMb = chunkSizeMb;
-    }
-
-    public int getParallelStreams() {
-        return parallelStreams;
-    }
-
-    public void setParallelStreams(int parallelStreams) {
         this.parallelStreams = parallelStreams;
     }
 }

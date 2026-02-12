@@ -1,6 +1,10 @@
 package com.flowpilot.transfer.domain;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -9,6 +13,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "transfer_jobs")
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TransferJob {
     @Id
     private UUID id;
@@ -50,9 +57,6 @@ public class TransferJob {
     @OrderBy("attemptNumber ASC")
     private List<TransferAttempt> attempts = new ArrayList<>();
 
-    protected TransferJob() {
-    }
-
     public TransferJob(
             UUID id,
             StorageEndpoint source,
@@ -75,78 +79,6 @@ public class TransferJob {
         this.createdAt = createdAt;
         this.status = JobStatus.PENDING;
         this.updatedAt = createdAt;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public StorageEndpoint getSource() {
-        return source;
-    }
-
-    public void setSource(StorageEndpoint source) {
-        this.source = source;
-    }
-
-    public StorageEndpoint getDestination() {
-        return destination;
-    }
-
-    public void setDestination(StorageEndpoint destination) {
-        this.destination = destination;
-    }
-
-    public String getObjectKey() {
-        return objectKey;
-    }
-
-    public void setObjectKey(String objectKey) {
-        this.objectKey = objectKey;
-    }
-
-    public long getObjectSizeBytes() {
-        return objectSizeBytes;
-    }
-
-    public void setObjectSizeBytes(long objectSizeBytes) {
-        this.objectSizeBytes = objectSizeBytes;
-    }
-
-    public int getPriority() {
-        return priority;
-    }
-
-    public void setPriority(int priority) {
-        this.priority = priority;
-    }
-
-    public int getMaxRetries() {
-        return maxRetries;
-    }
-
-    public void setMaxRetries(int maxRetries) {
-        this.maxRetries = maxRetries;
-    }
-
-    public ChunkPlan getChunkPlan() {
-        return chunkPlan;
-    }
-
-    public void setChunkPlan(ChunkPlan chunkPlan) {
-        this.chunkPlan = chunkPlan;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 
     public synchronized JobStatus getStatus() {
@@ -175,10 +107,6 @@ public class TransferJob {
 
     public synchronized List<TransferAttempt> getAttempts() {
         return List.copyOf(attempts);
-    }
-
-    public synchronized void setAttempts(List<TransferAttempt> attempts) {
-        this.attempts = attempts;
     }
 
     public synchronized int getAttemptCount() {
