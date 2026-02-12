@@ -5,19 +5,23 @@ import com.flowpilot.transfer.domain.AttemptStatus;
 import com.flowpilot.transfer.domain.JobStatus;
 import com.flowpilot.transfer.domain.TransferAttempt;
 import com.flowpilot.transfer.domain.TransferJob;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class TransferJobService {
-    private final Map<UUID, TransferJob> jobs = new ConcurrentHashMap<>();
+    private final TransferJobRepository transferJobRepository;
 
+    public TransferJobService(TransferJobRepository transferJobRepository) {
+        this.transferJobRepository = transferJobRepository;
+    }
+
+    @Transactional
     public TransferJob createJob(CreateTransferJobRequest request) {
         Instant now = Instant.now();
         TransferJob job = new TransferJob(
@@ -31,24 +35,21 @@ public class TransferJobService {
                 request.chunkPlan(),
                 now
         );
-        jobs.put(job.getId(), job);
-        return job;
+        return transferJobRepository.save(job);
     }
 
+    @Transactional(readOnly = true)
     public List<TransferJob> listJobs() {
-        return jobs.values().stream()
-                .sorted(Comparator.comparing(TransferJob::getCreatedAt).reversed())
-                .toList();
+        return transferJobRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 
+    @Transactional(readOnly = true)
     public TransferJob getJob(UUID id) {
-        TransferJob job = jobs.get(id);
-        if (job == null) {
-            throw new NotFoundException("Transfer job not found: " + id);
-        }
-        return job;
+        return transferJobRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Transfer job not found: " + id));
     }
 
+    @Transactional
     public TransferJob scheduleJob(UUID id, Instant scheduledAt) {
         TransferJob job = getJob(id);
         JobStatus status = job.getStatus();
@@ -56,9 +57,10 @@ public class TransferJobService {
             throw new InvalidTransferStateException("Cannot schedule job in state: " + status);
         }
         job.schedule(scheduledAt);
-        return job;
+        return transferJobRepository.save(job);
     }
 
+    @Transactional
     public TransferJob startJob(UUID id, ExecutionOptions options) {
         TransferJob job = getJob(id);
         JobStatus status = job.getStatus();
@@ -69,9 +71,10 @@ public class TransferJobService {
             throw new InvalidTransferStateException("Retry limit reached for job: " + id);
         }
         execute(job, options);
-        return job;
+        return transferJobRepository.save(job);
     }
 
+    @Transactional
     public TransferJob retryJob(UUID id, ExecutionOptions options) {
         TransferJob job = getJob(id);
         JobStatus status = job.getStatus();
@@ -82,9 +85,10 @@ public class TransferJobService {
             throw new InvalidTransferStateException("Retry limit reached for job: " + id);
         }
         execute(job, options);
-        return job;
+        return transferJobRepository.save(job);
     }
 
+    @Transactional
     public TransferJob cancelJob(UUID id) {
         TransferJob job = getJob(id);
         JobStatus status = job.getStatus();
@@ -92,7 +96,7 @@ public class TransferJobService {
             throw new InvalidTransferStateException("Cannot cancel job in state: " + status);
         }
         job.markCancelled();
-        return job;
+        return transferJobRepository.save(job);
     }
 
     private void execute(TransferJob job, ExecutionOptions options) {
