@@ -15,6 +15,10 @@ spring:
       enabled: true
       path: /h2-console
 
+transfer:
+  executor:
+    mode: simulated
+
 management:
   endpoints:
     web:

@@ -16,9 +16,11 @@ import java.util.UUID;
 @Service
 public class TransferJobService {
     private final TransferJobRepository transferJobRepository;
+    private final TransferExecutor transferExecutor;
 
-    public TransferJobService(TransferJobRepository transferJobRepository) {
+    public TransferJobService(TransferJobRepository transferJobRepository, TransferExecutor transferExecutor) {
         this.transferJobRepository = transferJobRepository;
+        this.transferExecutor = transferExecutor;
     }
 
     @Transactional
@@ -103,21 +105,17 @@ public class TransferJobService {
         int attemptNumber = job.getAttemptCount() + 1;
         Instant startedAt = Instant.now();
         job.markRunning();
-
-        double throughputMbps = options.throughputMbps() > 0 ? options.throughputMbps() : defaultThroughput(job);
+        TransferExecutionResult result = transferExecutor.execute(job, options);
         Instant finishedAt = Instant.now();
 
-        if (options.simulateFailure()) {
-            String reason = options.failureReason() == null || options.failureReason().isBlank()
-                    ? "Simulated network timeout"
-                    : options.failureReason();
+        if (result.status() == AttemptStatus.FAILED) {
             TransferAttempt attempt = new TransferAttempt(
                     attemptNumber,
-                    AttemptStatus.FAILED,
+                    result.status(),
                     startedAt,
                     finishedAt,
-                    reason,
-                    throughputMbps
+                    result.failureReason(),
+                    result.throughputMbps()
             );
             job.markFailed(attempt);
             return;
@@ -125,23 +123,12 @@ public class TransferJobService {
 
         TransferAttempt attempt = new TransferAttempt(
                 attemptNumber,
-                AttemptStatus.SUCCESS,
+                result.status(),
                 startedAt,
                 finishedAt,
                 null,
-                throughputMbps
+                result.throughputMbps()
         );
         job.markCompleted(attempt);
-    }
-
-    private double defaultThroughput(TransferJob job) {
-        double base = 120.0;
-        if (job.getObjectSizeBytes() > 5L * 1024 * 1024 * 1024) {
-            return base * 0.7;
-        }
-        if (job.getObjectSizeBytes() < 512L * 1024 * 1024) {
-            return base * 1.25;
-        }
-        return base;
     }
 }
