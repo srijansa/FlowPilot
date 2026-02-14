@@ -18,6 +18,18 @@ spring:
 transfer:
   executor:
     mode: simulated
+  s3:
+    region: us-east-1
+    endpoint:
+    access-key:
+    secret-key:
+    path-style-access: false
+  minio:
+    region: us-east-1
+    endpoint: http://localhost:9000
+    access-key: minioadmin
+    secret-key: minioadmin
+    path-style-access: true
 
 management:
   endpoints:
